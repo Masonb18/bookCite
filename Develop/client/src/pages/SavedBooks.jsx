@@ -4,8 +4,69 @@ import {
   Card,
   Button,
   Row,
-  Col
-} from 'react-bootstrap';
+  import React from 'react';
+  import {
+    Container,
+    Card,
+    Button,
+    Row,
+    Col
+  } from 'react-bootstrap';
+  import { useQuery, useMutation } from '@apollo/client'; // Import the useQuery and useMutation hooks
+  
+  import { GET_ME } from '../queries'; // Import the GET_ME query
+  import { REMOVE_BOOK } from '../mutations'; // Import the REMOVE_BOOK mutation
+  import Auth from '../utils/auth';
+  import { removeBookId } from '../utils/localStorage';
+  
+  const savedBooks = () => {
+    const { loading, data } = useQuery(GET_ME); // Use the useQuery hook for GET_ME query
+  
+    const userData = data?.me || {}; // Use optional chaining to get the user data
+  
+    // useMutation hook to execute the REMOVE_BOOK mutation
+    const [removeBookMutation] = useMutation(REMOVE_BOOK, {
+      onError: (error) => {
+        console.error(error);
+      },
+      onCompleted: (data) => {
+        // If the mutation is successful, update the userData state
+        const updatedUser = data.removeBook;
+        setUserData(updatedUser);
+        // Upon success, remove the book's ID from localStorage
+        removeBookId(bookId);
+      },
+    });
+  
+    // create function that accepts the book's mongo _id value as param and deletes the book from the database
+    const handleDeleteBook = async (bookId) => {
+      const token = Auth.loggedIn() ? Auth.getToken() : null;
+  
+      if (!token) {
+        return false;
+      }
+  
+      try {
+        // Execute the REMOVE_BOOK mutation using the useMutation hook
+        await removeBookMutation({
+          variables: { bookId },
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+  
+    if (loading) {
+      return <h2>LOADING...</h2>;
+    }
+  
+    return (
+      <>
+        {/* Rest of your component code remains the same... */}
+      </>
+    );
+  };
+  
 
 import { getMe, deleteBook } from '../utils/API';
 import Auth from '../utils/auth';
@@ -108,4 +169,6 @@ const SavedBooks = () => {
   );
 };
 
-export default SavedBooks;
+export SavedBooks;
+
+export default savedBooks;
